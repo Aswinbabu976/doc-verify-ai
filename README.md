@@ -1,0 +1,63 @@
+# DocVerify AI
+
+**AI-assisted document verification with human review.**
+
+DocVerify AI is a student project for helping organizations review submitted documents. It aims to extract information from documents, check it against configured rules, and prepare a report that explains its findings and sources.
+
+## Important
+
+AI supports the review process; it does not make the final decision. A human reviewer checks the evidence and records the final decision.
+
+Use only synthetic or anonymized documents for development and testing. Do not upload real identity documents or other real personal documents to this project or to an external AI service. Never commit passwords, API keys, or other secrets.
+
+## Project roles
+
+- **Applicant:** uploads documents and tracks an application.
+- **Reviewer:** checks documents and AI findings, then records a decision.
+- **Administrator:** manages users, document types, rules, and reference materials.
+
+## Planned workflow
+
+1. An applicant creates an application and uploads documents.
+2. The system extracts text and relevant fields.
+3. It checks the information against configured rules and reference sources.
+4. It prepares a report with findings, explanations, and source references.
+5. A human reviewer checks the report and records the final decision.
+
+## Project status
+
+- **Phase 1 - Product definition:** drafted.
+- **Phase 2 - Core platform:** planned.
+- **Phase 3 - AI and RAG integration:** planned.
+- **Phase 4 - Testing and evaluation:** planned.
+- **Phase 5 - Final documentation and video:** planned.
+
+## Planned technology
+
+The technology stack will be confirmed during implementation. The assignment suggests options such as FastAPI or Node.js, a web frontend, PostgreSQL, Docker, and GitHub Actions.
+
+## Repository structure
+
+- `backend/` - backend application files
+- `docs/` - project documentation
+- `personas/` - user personas
+- `scenarios/` - usage scenarios
+- `user-stories/` - user stories and acceptance criteria
+
+## Setup
+
+The application is not ready to run yet. Setup and run instructions will be added when implementation is available.
+
+## Project backlog
+
+GitHub Project: https://github.com/Aswinbabu976/DocVerify-AI
+
+## Author
+
+Aswin Babu
+MIT 5.2 - Senior IT Project Retake, Winter Semester 2026/27
+instructor: Dr Ali Alhossseini
+
+## License
+
+To be decided.
