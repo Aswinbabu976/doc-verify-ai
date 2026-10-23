@@ -1,5 +1,7 @@
 # Persona: Martin Keller - Reviewer
 
+![Illustration of Martin, a fictional reviewer](Images/avatar%202.jpg)
+
 **Profile:** Martin is a university admissions officer who reviews applications, especially during busy admission periods. He is comfortable with office software but is not an AI specialist.
 
 ## Goals

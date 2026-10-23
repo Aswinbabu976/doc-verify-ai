@@ -1,5 +1,9 @@
 # Persona: Sofia Brandt - Administrator
 
+![Illustration of Sofia, a fictional administrator](images/avatar%203.jpg)
+
+**Profile:** Sofia manages user access and verification rules for the admissions team.
+
 **Profile:** Sofia manages user access and verification rules for the admissions team. She is confident with web tools and spreadsheets but does not write code.
 
 ## Goals

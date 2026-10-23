@@ -1,5 +1,7 @@
 # Persona: Lina Hassan - Applicant
 
+![Illustration of Lina, a fictional applicant](Images/avatar%201.jpg)
+
 **Profile:** Lina is an international student applying to a master's program. She uses a phone and laptop comfortably but is new to the university's application system.
 
 ## Goals
