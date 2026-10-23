@@ -50,7 +50,7 @@ The application is not ready to run yet. Setup and run instructions will be adde
 
 ## Project backlog
 
-GitHub Project: https://github.com/Aswinbabu976/DocVerify-AI
+GitHub Project: [DocVerify AI Backlog](https://github.com/users/Aswinbabu976/projects/2/views/1?layout=board)
 
 ## Author
 
