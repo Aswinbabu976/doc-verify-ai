@@ -1,4 +1,4 @@
-# Feature Priorities - MoSCoW
+# Feature Priorities 
 
 These priorities describe the planned project. AI findings support a human reviewer; they do not make the final decision.
 
