@@ -32,9 +32,16 @@ Use only synthetic or anonymized documents for development and testing. Do not u
 - **Phase 4 - Testing and evaluation:** planned.
 - **Phase 5 - Final documentation and video:** planned.
 
-## Planned technology
+## Selected technology
 
-The technology stack will be confirmed during implementation. The assignment suggests options such as FastAPI or Node.js, a web frontend, PostgreSQL, Docker, and GitHub Actions.
+- Frontend: React with Vite
+- Backend: Python with FastAPI
+- Main database: MongoDB
+- Vector database: Qdrant (container setup in Phase 2; AI/RAG use in Phase 3)
+- Local services: Docker Compose
+- Continuous integration: GitHub Actions
+
+See [the architecture document](docs/architecture.md) for details.
 
 ## Repository structure
 
