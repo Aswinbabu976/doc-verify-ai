@@ -1,8 +1,9 @@
 from datetime import UTC, datetime, timedelta
 
 import jwt
-from auth import jwt_secret
 from fastapi.testclient import TestClient
+
+from auth import jwt_secret
 from main import app
 
 client = TestClient(app)
