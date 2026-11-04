@@ -50,7 +50,7 @@ jobs:
         working-directory: backend
 
       - name: Test backend
-        run: pytest
+        run: python -m pytest
         working-directory: backend
 
       - name: Build Docker services
