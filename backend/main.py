@@ -1,7 +1,9 @@
+from typing import Annotated
+
+from auth import require_role
+from auth import router as auth_router
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from auth import require_role, router as auth_router
 
 app = FastAPI(title="DocVerify AI API")
 
@@ -22,5 +24,7 @@ def health_check():
 
 
 @app.get("/reviewer/queue")
-def reviewer_queue(user: dict = Depends(require_role("reviewer"))):
+def reviewer_queue(
+    user: Annotated[dict, Depends(require_role("reviewer"))],
+):
     return {"reviewer": user["email"], "items": []}

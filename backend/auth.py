@@ -1,15 +1,16 @@
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
+from pwdlib import PasswordHash
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
-from pwdlib import PasswordHash
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 bearer_scheme = HTTPBearer()
@@ -35,7 +36,7 @@ class LoginRequest(BaseModel):
 
 
 def create_token(email: str, role: str) -> str:
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+    expires_at = datetime.now(UTC) + timedelta(minutes=30)
     payload = {"sub": email, "role": role, "exp": expires_at}
     return jwt.encode(payload, jwt_secret, algorithm="HS256")
 
@@ -54,7 +55,7 @@ def register(request: RegisterRequest):
                 "email": email,
                 "password_hash": password_hash.hash(request.password),
                 "role": "applicant",
-                "created_at": datetime.now(timezone.utc),
+                "created_at": datetime.now(UTC),
             }
         )
     except DuplicateKeyError:
@@ -77,7 +78,7 @@ def login(request: LoginRequest):
 
 @router.get("/me")
 def current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer_scheme)],
 ):
     try:
         payload = jwt.decode(credentials.credentials, jwt_secret, algorithms=["HS256"])
@@ -86,7 +87,7 @@ def current_user(
         raise HTTPException(status_code=401, detail="Invalid or expired login token")
 
 def require_role(required_role: str):
-    def role_checker(user: dict = Depends(current_user)):
+    def role_checker(user: Annotated[dict, Depends(current_user)]):
         if user["role"] != required_role:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         return user

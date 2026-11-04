@@ -1,16 +1,15 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
-from fastapi.testclient import TestClient
-
 from auth import jwt_secret
+from fastapi.testclient import TestClient
 from main import app
 
 client = TestClient(app)
 
 
 def create_test_token(role: str) -> str:
-    expires = datetime.now(timezone.utc) + timedelta(minutes=5)
+    expires = datetime.now(UTC) + timedelta(minutes=5)
     payload = {"sub": "test@example.com", "role": role, "exp": expires}
     return jwt.encode(payload, jwt_secret, algorithm="HS256")
 
