@@ -46,7 +46,21 @@ The technology stack will be confirmed during implementation. The assignment sug
 
 ## Setup
 
-The application is not ready to run yet. Setup and run instructions will be added when implementation is available.
+### Requirements
+- Docker Desktop installed and running.
+
+### Start the application
+From the repository root, run `docker compose up --build -d`.
+
+### Open the services
+- Frontend: http://localhost:5173/
+- Backend health check: http://localhost:8000/health
+- Qdrant dashboard: http://localhost:6333/dashboard
+
+### Stop the application
+From the repository root, run `docker compose down`.
+
+MongoDB and Qdrant data remain in their Docker volumes.
 
 ## Project backlog
 
