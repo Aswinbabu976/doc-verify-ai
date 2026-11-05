@@ -10,6 +10,9 @@ function App() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
+  const [applications, setApplications] = useState([]);
+  const [applicationsError, setApplicationsError] = useState("");
+  const [applicationsLoaded, setApplicationsLoaded] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -40,14 +43,53 @@ function App() {
       localStorage.setItem("access_token", data.access_token);
       setUser({ email, role: data.role });
       setPassword("");
+      setApplications([]);
+      setApplicationsError("");
+      setApplicationsLoaded(false);
     } catch {
-      setError("Could not reach the backend. Check that Docker services are running.");
+      setError(
+        "Could not reach the backend. Check that Docker services are running.",
+      );
+    }
+  }
+
+  async function loadApplications() {
+    setApplicationsError("");
+
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+      setApplicationsError("Please sign in again to view your applications.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/applications/mine`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setApplicationsError(data.detail || "Could not load applications.");
+        return;
+      }
+
+      setApplications(data);
+      setApplicationsLoaded(true);
+    } catch {
+      setApplicationsError("Could not reach the backend.");
     }
   }
 
   function logout() {
     localStorage.removeItem("access_token");
     setUser(null);
+    setApplications([]);
+    setApplicationsError("");
+    setApplicationsLoaded(false);
     setMessage("You have signed out.");
   }
 
@@ -69,6 +111,8 @@ function App() {
         .message { color: #187443; }
         .error { color: #b42318; }
         .role { display: inline-block; padding: 5px 10px; border-radius: 20px; background: #e8f2fc; color: #174a78; }
+        .application-list { padding-left: 20px; }
+        .application-list li { margin: 10px 0; color: #5b6472; overflow-wrap: anywhere; }
       `}</style>
 
       <section className="card">
@@ -83,7 +127,39 @@ function App() {
               Your role: <span className="role">{user.role}</span>
             </p>
 
-            {user.role === "applicant" && <DocumentUpload />}
+            {user.role === "applicant" && (
+              <>
+                <DocumentUpload />
+
+                <section>
+                  <h2>My applications</h2>
+                  <button type="button" onClick={loadApplications}>
+                    Refresh applications
+                  </button>
+
+                  {applicationsError && (
+                    <p className="error">{applicationsError}</p>
+                  )}
+
+                  {applicationsLoaded && applications.length === 0 && (
+                    <p>You do not have any applications yet.</p>
+                  )}
+
+                  {applications.length > 0 && (
+                    <ul className="application-list">
+                      {applications.map((application) => (
+                        <li key={application.id}>
+                          <strong>Status:</strong> {application.status}
+                          <br />
+                          <strong>Created:</strong>{" "}
+                          {new Date(application.created_at).toLocaleString()}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </>
+            )}
 
             <button onClick={logout}>Sign out</button>
           </>

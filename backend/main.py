@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from applications import router as applications_router
 from auth import require_role
 from auth import router as auth_router
 from documents import router as documents_router
@@ -17,6 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(applications_router)
 app.include_router(auth_router)
 app.include_router(documents_router)
 
