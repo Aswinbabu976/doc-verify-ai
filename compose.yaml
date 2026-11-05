@@ -11,6 +11,8 @@ services:
     build: ./backend
     ports:
       - "127.0.0.1:8000:8000"
+    volumes:
+      - uploaded_documents:/app/uploads
     environment:
       MONGODB_URL: mongodb://mongodb:27017/docverify
     depends_on:
@@ -49,5 +51,6 @@ services:
       - qdrant_data:/qdrant/storage
 
 volumes:
+  uploaded_documents:
   mongodb_data:
   qdrant_data:

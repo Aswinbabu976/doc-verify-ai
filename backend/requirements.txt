@@ -4,3 +4,4 @@ uvicorn[standard]
 pymongo
 pwdlib[argon2]
 PyJWT
+python-multipart

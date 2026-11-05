@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DocumentUpload from "./DocumentUpload";
 
 const API_URL = "http://localhost:8000";
 
@@ -78,7 +79,12 @@ function App() {
           <>
             <h2>Welcome</h2>
             <p>{user.email}</p>
-            <p>Your role: <span className="role">{user.role}</span></p>
+            <p>
+              Your role: <span className="role">{user.role}</span>
+            </p>
+
+            {user.role === "applicant" && <DocumentUpload />}
+
             <button onClick={logout}>Sign out</button>
           </>
         ) : (
