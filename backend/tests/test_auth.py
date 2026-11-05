@@ -28,9 +28,8 @@ def test_applicant_cannot_access_reviewer_queue():
 def test_reviewer_can_access_reviewer_queue():
     token = create_test_token("reviewer")
     response = client.get(
-        "/reviewer/queue",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-
+    "/applications/reviewer/queue",
+    headers={"Authorization": f"Bearer {token}"},
+)
     assert response.status_code == 200
     assert response.json()["items"] == []
