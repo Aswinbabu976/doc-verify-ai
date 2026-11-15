@@ -11,6 +11,7 @@ from auth import require_role, users
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 applications = users.database["applications"]
+documents = users.database["documents"]
 
 
 class StatusUpdate(BaseModel):
@@ -82,6 +83,36 @@ def reviewer_queue(
         "reviewer": user["email"],
         "items": [format_application(record) for record in records],
     }
+
+
+@router.get("/{application_id}/documents")
+def list_application_documents(
+    application_id: str,
+    user: Annotated[dict, Depends(require_role("reviewer"))],
+):
+    try:
+        object_id = ObjectId(application_id)
+    except InvalidId:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    application = applications.find_one({"_id": object_id})
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    records = documents.find(
+        {"uploaded_by": application["applicant_email"]}
+    ).sort("uploaded_at", ASCENDING)
+
+    return [
+        {
+            "id": str(document["_id"]),
+            "filename": document["original_filename"],
+            "size_bytes": document["size_bytes"],
+            "uploaded_at": document["uploaded_at"].isoformat(),
+            "file_url": f"/documents/{document['_id']}/file",
+        }
+        for document in records
+    ]
 
 
 @router.patch("/{application_id}/status")
