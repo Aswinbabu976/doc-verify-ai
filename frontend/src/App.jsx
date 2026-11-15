@@ -17,9 +17,13 @@ function App() {
 
   const [reviewQueue, setReviewQueue] = useState([]);
   const [reviewQueueError, setReviewQueueError] = useState("");
+  const [reviewQueueMessage, setReviewQueueMessage] = useState("");
   const [reviewQueueLoaded, setReviewQueueLoaded] = useState(false);
   const [documentsByApplication, setDocumentsByApplication] = useState({});
   const [documentsErrors, setDocumentsErrors] = useState({});
+  const [decisionReasons, setDecisionReasons] = useState({});
+  const [decisionError, setDecisionError] = useState("");
+  const [submittingDecisionFor, setSubmittingDecisionFor] = useState(null);
   const [preview, setPreview] = useState(null);
 
   async function handleSubmit(event) {
@@ -56,9 +60,12 @@ function App() {
       setApplicationsLoaded(false);
       setReviewQueue([]);
       setReviewQueueError("");
+      setReviewQueueMessage("");
       setReviewQueueLoaded(false);
       setDocumentsByApplication({});
       setDocumentsErrors({});
+      setDecisionReasons({});
+      setDecisionError("");
     } catch {
       setError(
         "Could not reach the backend. Check that Docker services are running.",
@@ -95,6 +102,7 @@ function App() {
 
   async function loadReviewQueue() {
     setReviewQueueError("");
+    setDecisionError("");
 
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -103,10 +111,9 @@ function App() {
     }
 
     try {
-      const response = await fetch(
-        `${API_URL}/applications/reviewer/queue`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await fetch(`${API_URL}/applications/reviewer/queue`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -165,6 +172,58 @@ function App() {
     }
   }
 
+  async function submitDecision(applicationId, status) {
+    setDecisionError("");
+    setReviewQueueMessage("");
+
+    const reason = (decisionReasons[applicationId] || "").trim();
+    if (!reason) {
+      setDecisionError("Enter a reason before approving or rejecting.");
+      return;
+    }
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      setDecisionError("Please sign in again before recording a decision.");
+      return;
+    }
+
+    setSubmittingDecisionFor(applicationId);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/applications/${applicationId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status, reason }),
+        },
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        setDecisionError(data.detail || "Could not save the decision.");
+        return;
+      }
+
+      setReviewQueueMessage(
+        `Decision recorded: application ${status}.`,
+      );
+      setDecisionReasons((current) => ({
+        ...current,
+        [applicationId]: "",
+      }));
+      await loadReviewQueue();
+    } catch {
+      setDecisionError("Could not reach the backend.");
+    } finally {
+      setSubmittingDecisionFor(null);
+    }
+  }
+
   async function openDocument(document) {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -214,9 +273,12 @@ function App() {
     setApplicationsLoaded(false);
     setReviewQueue([]);
     setReviewQueueError("");
+    setReviewQueueMessage("");
     setReviewQueueLoaded(false);
     setDocumentsByApplication({});
     setDocumentsErrors({});
+    setDecisionReasons({});
+    setDecisionError("");
     setMessage("You have signed out.");
   }
 
@@ -230,9 +292,11 @@ function App() {
         h1 { margin: 0 0 8px; color: #173b69; }
         p { color: #5b6472; }
         label { display: block; margin: 18px 0 6px; font-weight: 600; }
-        input { width: 100%; padding: 11px; border: 1px solid #cbd5e1; border-radius: 7px; font-size: 16px; }
+        input, textarea { width: 100%; padding: 11px; border: 1px solid #cbd5e1; border-radius: 7px; font-size: 16px; font-family: inherit; }
+        textarea { min-height: 90px; resize: vertical; }
         button { margin-top: 16px; border: 0; border-radius: 7px; padding: 12px; background: #1769aa; color: white; font-size: 16px; cursor: pointer; }
         button:hover { background: #12558b; }
+        button:disabled { opacity: 0.65; cursor: not-allowed; }
         form button, .full-width { width: 100%; }
         .switch { background: transparent; color: #1769aa; margin-top: 8px; }
         .switch:hover { background: #e8f2fc; color: #12558b; text-decoration: underline; }
@@ -242,9 +306,14 @@ function App() {
         .application-list, .document-list { padding-left: 20px; }
         .application-list li, .document-list li { margin: 10px 0; color: #5b6472; overflow-wrap: anywhere; }
         .review-item { margin: 18px 0; padding: 16px; border: 1px solid #d6deea; border-radius: 8px; }
+        .decision-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .decision-actions button { flex: 1; min-width: 140px; }
+        .approve-button { background: #187443; }
+        .approve-button:hover { background: #125b34; }
+        .reject-button { background: #b42318; }
+        .reject-button:hover { background: #8f1c13; }
         .preview { margin-top: 24px; }
         .preview iframe { width: 100%; height: 600px; border: 1px solid #cbd5e1; border-radius: 8px; }
-        .secondary-button { background: #526579; margin-left: 8px; }
         @media (max-width: 600px) {
           .card { padding: 22px; }
           .preview iframe { height: 420px; }
@@ -290,6 +359,13 @@ function App() {
                       {applications.map((application) => (
                         <li key={application.id}>
                           <strong>Status:</strong> {application.status}
+                          {application.reason && (
+                            <>
+                              <br />
+                              <strong>Reviewer’s reason:</strong>{" "}
+                              {application.reason}
+                            </>
+                          )}
                           <br />
                           <strong>Created:</strong>{" "}
                           {new Date(application.created_at).toLocaleString()}
@@ -312,9 +388,13 @@ function App() {
                   Refresh reviewer queue
                 </button>
 
+                {reviewQueueMessage && (
+                  <p className="message">{reviewQueueMessage}</p>
+                )}
                 {reviewQueueError && (
                   <p className="error">{reviewQueueError}</p>
                 )}
+                {decisionError && <p className="error">{decisionError}</p>}
 
                 {reviewQueueLoaded && reviewQueue.length === 0 && (
                   <p>There are no pending applications to review.</p>
@@ -374,6 +454,45 @@ function App() {
                         )}
                       </ul>
                     )}
+
+                    <label htmlFor={`reason-${application.id}`}>
+                      Reason for decision
+                    </label>
+                    <textarea
+                      id={`reason-${application.id}`}
+                      value={decisionReasons[application.id] || ""}
+                      onChange={(event) =>
+                        setDecisionReasons((current) => ({
+                          ...current,
+                          [application.id]: event.target.value,
+                        }))
+                      }
+                      maxLength={1000}
+                      placeholder="Explain why you are approving or rejecting this application."
+                    />
+
+                    <div className="decision-actions">
+                      <button
+                        className="approve-button"
+                        type="button"
+                        disabled={submittingDecisionFor === application.id}
+                        onClick={() =>
+                          submitDecision(application.id, "approved")
+                        }
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="reject-button"
+                        type="button"
+                        disabled={submittingDecisionFor === application.id}
+                        onClick={() =>
+                          submitDecision(application.id, "rejected")
+                        }
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </article>
                 ))}
 

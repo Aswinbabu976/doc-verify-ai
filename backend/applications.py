@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from bson import ObjectId
 from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pymongo import ASCENDING, DESCENDING
 
 from auth import require_role, users
@@ -21,13 +21,19 @@ class StatusUpdate(BaseModel):
         "approved",
         "rejected",
     ]
+    reason: str | None = Field(default=None, max_length=1000)
 
 
 def format_application(application):
+    decided_at = application.get("decided_at")
+
     return {
         "id": str(application["_id"]),
         "applicant_email": application["applicant_email"],
         "status": application["status"],
+        "reason": application.get("decision_reason"),
+        "decided_by": application.get("decided_by"),
+        "decided_at": decided_at.isoformat() if decided_at else None,
         "created_at": application["created_at"].isoformat(),
         "updated_at": application["updated_at"].isoformat(),
     }
@@ -42,6 +48,9 @@ def create_application(
         {
             "applicant_email": user["email"],
             "status": "submitted",
+            "decision_reason": None,
+            "decided_by": None,
+            "decided_at": None,
             "created_at": now,
             "updated_at": now,
         }
@@ -49,7 +58,11 @@ def create_application(
 
     return {
         "id": str(result.inserted_id),
+        "applicant_email": user["email"],
         "status": "submitted",
+        "reason": None,
+        "decided_by": None,
+        "decided_at": None,
         "created_at": now.isoformat(),
         "updated_at": now.isoformat(),
     }
@@ -126,10 +139,41 @@ def update_application_status(
     except InvalidId:
         raise HTTPException(status_code=404, detail="Application not found")
 
+    is_final_decision = update.status in {"approved", "rejected"}
+    reason = (update.reason or "").strip()
+
+    if is_final_decision and not reason:
+        raise HTTPException(
+            status_code=422,
+            detail="A reason is required to approve or reject an application",
+        )
+
     now = datetime.now(UTC)
+    fields_to_update = {
+        "status": update.status,
+        "updated_at": now,
+    }
+
+    if is_final_decision:
+        fields_to_update.update(
+            {
+                "decision_reason": reason,
+                "decided_by": user["email"],
+                "decided_at": now,
+            }
+        )
+    else:
+        fields_to_update.update(
+            {
+                "decision_reason": None,
+                "decided_by": None,
+                "decided_at": None,
+            }
+        )
+
     result = applications.update_one(
         {"_id": object_id},
-        {"$set": {"status": update.status, "updated_at": now}},
+        {"$set": fields_to_update},
     )
 
     if result.matched_count == 0:
