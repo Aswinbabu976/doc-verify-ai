@@ -3,10 +3,21 @@ from datetime import UTC, datetime, timedelta
 import jwt
 from fastapi.testclient import TestClient
 
+import applications as applications_module
 from auth import jwt_secret
 from main import app
 
 client = TestClient(app)
+
+
+class EmptyCursor:
+    def sort(self, field, direction):
+        return iter(())
+
+
+class FakeApplications:
+    def find(self, query):
+        return EmptyCursor()
 
 
 def create_test_token(role: str) -> str:
@@ -25,12 +36,21 @@ def test_applicant_cannot_access_reviewer_queue():
     assert response.status_code == 403
 
 
-def test_reviewer_can_access_reviewer_queue():
+def test_reviewer_can_access_reviewer_queue(monkeypatch):
+    monkeypatch.setattr(
+        applications_module,
+        "applications",
+        FakeApplications(),
+    )
     token = create_test_token("reviewer")
+
     response = client.get(
         "/applications/reviewer/queue",
         headers={"Authorization": f"Bearer {token}"},
     )
 
     assert response.status_code == 200
-    assert isinstance(response.json()["items"], list)
+    assert response.json() == {
+        "reviewer": "test@example.com",
+        "items": [],
+    }
