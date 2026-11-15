@@ -10,9 +10,17 @@ function App() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
+
   const [applications, setApplications] = useState([]);
   const [applicationsError, setApplicationsError] = useState("");
   const [applicationsLoaded, setApplicationsLoaded] = useState(false);
+
+  const [reviewQueue, setReviewQueue] = useState([]);
+  const [reviewQueueError, setReviewQueueError] = useState("");
+  const [reviewQueueLoaded, setReviewQueueLoaded] = useState(false);
+  const [documentsByApplication, setDocumentsByApplication] = useState({});
+  const [documentsErrors, setDocumentsErrors] = useState({});
+  const [preview, setPreview] = useState(null);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -46,6 +54,11 @@ function App() {
       setApplications([]);
       setApplicationsError("");
       setApplicationsLoaded(false);
+      setReviewQueue([]);
+      setReviewQueueError("");
+      setReviewQueueLoaded(false);
+      setDocumentsByApplication({});
+      setDocumentsErrors({});
     } catch {
       setError(
         "Could not reach the backend. Check that Docker services are running.",
@@ -57,7 +70,6 @@ function App() {
     setApplicationsError("");
 
     const token = localStorage.getItem("access_token");
-
     if (!token) {
       setApplicationsError("Please sign in again to view your applications.");
       return;
@@ -65,11 +77,8 @@ function App() {
 
     try {
       const response = await fetch(`${API_URL}/applications/mine`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await response.json();
 
       if (!response.ok) {
@@ -84,12 +93,130 @@ function App() {
     }
   }
 
+  async function loadReviewQueue() {
+    setReviewQueueError("");
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      setReviewQueueError("Please sign in again to view the reviewer queue.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/applications/reviewer/queue`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        setReviewQueueError(data.detail || "Could not load the reviewer queue.");
+        return;
+      }
+
+      setReviewQueue(data.items);
+      setReviewQueueLoaded(true);
+      setDocumentsByApplication({});
+      setDocumentsErrors({});
+    } catch {
+      setReviewQueueError("Could not reach the backend.");
+    }
+  }
+
+  async function loadApplicationDocuments(applicationId) {
+    setDocumentsErrors((current) => ({
+      ...current,
+      [applicationId]: "",
+    }));
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      setDocumentsErrors((current) => ({
+        ...current,
+        [applicationId]: "Please sign in again to view documents.",
+      }));
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/applications/${applicationId}/documents`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        setDocumentsErrors((current) => ({
+          ...current,
+          [applicationId]: data.detail || "Could not load documents.",
+        }));
+        return;
+      }
+
+      setDocumentsByApplication((current) => ({
+        ...current,
+        [applicationId]: data,
+      }));
+    } catch {
+      setDocumentsErrors((current) => ({
+        ...current,
+        [applicationId]: "Could not reach the backend.",
+      }));
+    }
+  }
+
+  async function openDocument(document) {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      setReviewQueueError("Please sign in again to open this document.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}${document.file_url}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setReviewQueueError(data.detail || "Could not open the document.");
+        return;
+      }
+
+      const fileBlob = await response.blob();
+      const fileUrl = URL.createObjectURL(fileBlob);
+
+      setPreview((current) => {
+        if (current) {
+          URL.revokeObjectURL(current.url);
+        }
+        return { url: fileUrl, filename: document.filename };
+      });
+      setReviewQueueError("");
+    } catch {
+      setReviewQueueError("Could not reach the backend.");
+    }
+  }
+
+  function closePreview() {
+    if (preview) {
+      URL.revokeObjectURL(preview.url);
+      setPreview(null);
+    }
+  }
+
   function logout() {
+    closePreview();
     localStorage.removeItem("access_token");
     setUser(null);
     setApplications([]);
     setApplicationsError("");
     setApplicationsLoaded(false);
+    setReviewQueue([]);
+    setReviewQueueError("");
+    setReviewQueueLoaded(false);
+    setDocumentsByApplication({});
+    setDocumentsErrors({});
     setMessage("You have signed out.");
   }
 
@@ -99,20 +226,29 @@ function App() {
         * { box-sizing: border-box; }
         body { margin: 0; font-family: Arial, sans-serif; background: #f3f6fb; color: #1f2937; }
         .page { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-        .card { width: 100%; max-width: 420px; background: white; padding: 32px; border-radius: 14px; box-shadow: 0 8px 28px #00000012; }
+        .card { width: 100%; max-width: 900px; background: white; padding: 32px; border-radius: 14px; box-shadow: 0 8px 28px #00000012; }
         h1 { margin: 0 0 8px; color: #173b69; }
         p { color: #5b6472; }
         label { display: block; margin: 18px 0 6px; font-weight: 600; }
         input { width: 100%; padding: 11px; border: 1px solid #cbd5e1; border-radius: 7px; font-size: 16px; }
-        button { margin-top: 20px; width: 100%; border: 0; border-radius: 7px; padding: 12px; background: #1769aa; color: white; font-size: 16px; cursor: pointer; }
+        button { margin-top: 16px; border: 0; border-radius: 7px; padding: 12px; background: #1769aa; color: white; font-size: 16px; cursor: pointer; }
         button:hover { background: #12558b; }
+        form button, .full-width { width: 100%; }
         .switch { background: transparent; color: #1769aa; margin-top: 8px; }
         .switch:hover { background: #e8f2fc; color: #12558b; text-decoration: underline; }
         .message { color: #187443; }
         .error { color: #b42318; }
         .role { display: inline-block; padding: 5px 10px; border-radius: 20px; background: #e8f2fc; color: #174a78; }
-        .application-list { padding-left: 20px; }
-        .application-list li { margin: 10px 0; color: #5b6472; overflow-wrap: anywhere; }
+        .application-list, .document-list { padding-left: 20px; }
+        .application-list li, .document-list li { margin: 10px 0; color: #5b6472; overflow-wrap: anywhere; }
+        .review-item { margin: 18px 0; padding: 16px; border: 1px solid #d6deea; border-radius: 8px; }
+        .preview { margin-top: 24px; }
+        .preview iframe { width: 100%; height: 600px; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .secondary-button { background: #526579; margin-left: 8px; }
+        @media (max-width: 600px) {
+          .card { padding: 22px; }
+          .preview iframe { height: 420px; }
+        }
       `}</style>
 
       <section className="card">
@@ -133,7 +269,11 @@ function App() {
 
                 <section>
                   <h2>My applications</h2>
-                  <button type="button" onClick={loadApplications}>
+                  <button
+                    className="full-width"
+                    type="button"
+                    onClick={loadApplications}
+                  >
                     Refresh applications
                   </button>
 
@@ -161,7 +301,100 @@ function App() {
               </>
             )}
 
-            <button onClick={logout}>Sign out</button>
+            {user.role === "reviewer" && (
+              <section>
+                <h2>Reviewer queue</h2>
+                <button
+                  className="full-width"
+                  type="button"
+                  onClick={loadReviewQueue}
+                >
+                  Refresh reviewer queue
+                </button>
+
+                {reviewQueueError && (
+                  <p className="error">{reviewQueueError}</p>
+                )}
+
+                {reviewQueueLoaded && reviewQueue.length === 0 && (
+                  <p>There are no pending applications to review.</p>
+                )}
+
+                {reviewQueue.map((application) => (
+                  <article className="review-item" key={application.id}>
+                    <h3>Application</h3>
+                    <p>
+                      <strong>Applicant:</strong> {application.applicant_email}
+                    </p>
+                    <p>
+                      <strong>Status:</strong> {application.status}
+                    </p>
+                    <p>
+                      <strong>Submitted:</strong>{" "}
+                      {new Date(application.created_at).toLocaleString()}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => loadApplicationDocuments(application.id)}
+                    >
+                      Load documents
+                    </button>
+
+                    {documentsErrors[application.id] && (
+                      <p className="error">
+                        {documentsErrors[application.id]}
+                      </p>
+                    )}
+
+                    {documentsByApplication[application.id]?.length === 0 && (
+                      <p>No documents found for this applicant.</p>
+                    )}
+
+                    {documentsByApplication[application.id]?.length > 0 && (
+                      <ul className="document-list">
+                        {documentsByApplication[application.id].map(
+                          (document) => (
+                            <li key={document.id}>
+                              <strong>{document.filename}</strong>
+                              {" — "}
+                              {Math.round(document.size_bytes / 1024)} KB
+                              <br />
+                              Uploaded:{" "}
+                              {new Date(document.uploaded_at).toLocaleString()}
+                              <br />
+                              <button
+                                type="button"
+                                onClick={() => openDocument(document)}
+                              >
+                                Preview PDF
+                              </button>
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    )}
+                  </article>
+                ))}
+
+                {preview && (
+                  <section className="preview">
+                    <h3>{preview.filename}</h3>
+                    <button type="button" onClick={closePreview}>
+                      Close preview
+                    </button>
+                    <iframe
+                      title={`PDF preview: ${preview.filename}`}
+                      src={preview.url}
+                    />
+                  </section>
+                )}
+              </section>
+            )}
+
+            <button className="full-width" onClick={logout}>
+              Sign out
+            </button>
           </>
         ) : (
           <form onSubmit={handleSubmit}>
