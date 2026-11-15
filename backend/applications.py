@@ -5,7 +5,7 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from pymongo import DESCENDING
+from pymongo import ASCENDING, DESCENDING
 
 from auth import require_role, users
 
@@ -25,6 +25,7 @@ class StatusUpdate(BaseModel):
 def format_application(application):
     return {
         "id": str(application["_id"]),
+        "applicant_email": application["applicant_email"],
         "status": application["status"],
         "created_at": application["created_at"].isoformat(),
         "updated_at": application["updated_at"].isoformat(),
@@ -62,6 +63,25 @@ def list_my_applications(
     ).sort("created_at", DESCENDING)
 
     return [format_application(record) for record in records]
+
+
+@router.get("/reviewer/queue")
+def reviewer_queue(
+    user: Annotated[dict, Depends(require_role("reviewer"))],
+):
+    pending_statuses = [
+        "submitted",
+        "under_review",
+        "additional_documents_requested",
+    ]
+    records = applications.find(
+        {"status": {"$in": pending_statuses}}
+    ).sort("created_at", ASCENDING)
+
+    return {
+        "reviewer": user["email"],
+        "items": [format_application(record) for record in records],
+    }
 
 
 @router.patch("/{application_id}/status")
