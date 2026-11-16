@@ -24,8 +24,13 @@ class StatusUpdate(BaseModel):
     reason: str | None = Field(default=None, max_length=1000)
 
 
+class DocumentsRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=1000)
+
+
 def format_application(application):
     decided_at = application.get("decided_at")
+    documents_requested_at = application.get("documents_requested_at")
 
     return {
         "id": str(application["_id"]),
@@ -34,6 +39,15 @@ def format_application(application):
         "reason": application.get("decision_reason"),
         "decided_by": application.get("decided_by"),
         "decided_at": decided_at.isoformat() if decided_at else None,
+        "document_request_message": application.get(
+            "document_request_message"
+        ),
+        "documents_requested_by": application.get("documents_requested_by"),
+        "documents_requested_at": (
+            documents_requested_at.isoformat()
+            if documents_requested_at
+            else None
+        ),
         "created_at": application["created_at"].isoformat(),
         "updated_at": application["updated_at"].isoformat(),
     }
@@ -51,6 +65,9 @@ def create_application(
             "decision_reason": None,
             "decided_by": None,
             "decided_at": None,
+            "document_request_message": None,
+            "documents_requested_by": None,
+            "documents_requested_at": None,
             "created_at": now,
             "updated_at": now,
         }
@@ -63,6 +80,9 @@ def create_application(
         "reason": None,
         "decided_by": None,
         "decided_at": None,
+        "document_request_message": None,
+        "documents_requested_by": None,
+        "documents_requested_at": None,
         "created_at": now.isoformat(),
         "updated_at": now.isoformat(),
     }
@@ -126,6 +146,45 @@ def list_application_documents(
         }
         for document in records
     ]
+
+
+@router.post("/{application_id}/request-documents")
+def request_additional_documents(
+    application_id: str,
+    request: DocumentsRequest,
+    user: Annotated[dict, Depends(require_role("reviewer"))],
+):
+    try:
+        object_id = ObjectId(application_id)
+    except InvalidId:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    message = request.message.strip()
+    if not message:
+        raise HTTPException(
+            status_code=422,
+            detail="Explain which additional documents are needed",
+        )
+
+    now = datetime.now(UTC)
+    result = applications.update_one(
+        {"_id": object_id},
+        {
+            "$set": {
+                "status": "additional_documents_requested",
+                "document_request_message": message,
+                "documents_requested_by": user["email"],
+                "documents_requested_at": now,
+                "updated_at": now,
+            }
+        },
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    application = applications.find_one({"_id": object_id})
+    return format_application(application)
 
 
 @router.patch("/{application_id}/status")
