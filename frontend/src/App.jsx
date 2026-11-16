@@ -24,6 +24,10 @@ function App() {
   const [decisionReasons, setDecisionReasons] = useState({});
   const [decisionError, setDecisionError] = useState("");
   const [submittingDecisionFor, setSubmittingDecisionFor] = useState(null);
+  const [documentRequestMessages, setDocumentRequestMessages] = useState({});
+  const [documentRequestErrors, setDocumentRequestErrors] = useState({});
+  const [submittingDocumentRequestFor, setSubmittingDocumentRequestFor] =
+    useState(null);
   const [preview, setPreview] = useState(null);
 
   async function handleSubmit(event) {
@@ -66,6 +70,8 @@ function App() {
       setDocumentsErrors({});
       setDecisionReasons({});
       setDecisionError("");
+      setDocumentRequestMessages({});
+      setDocumentRequestErrors({});
     } catch {
       setError(
         "Could not reach the backend. Check that Docker services are running.",
@@ -209,9 +215,7 @@ function App() {
         return;
       }
 
-      setReviewQueueMessage(
-        `Decision recorded: application ${status}.`,
-      );
+      setReviewQueueMessage(`Decision recorded: application ${status}.`);
       setDecisionReasons((current) => ({
         ...current,
         [applicationId]: "",
@@ -221,6 +225,73 @@ function App() {
       setDecisionError("Could not reach the backend.");
     } finally {
       setSubmittingDecisionFor(null);
+    }
+  }
+
+  async function submitDocumentRequest(applicationId) {
+    setDocumentRequestErrors((current) => ({
+      ...current,
+      [applicationId]: "",
+    }));
+
+    const requestMessage = (
+      documentRequestMessages[applicationId] || ""
+    ).trim();
+
+    if (!requestMessage) {
+      setDocumentRequestErrors((current) => ({
+        ...current,
+        [applicationId]: "Explain which additional documents are needed.",
+      }));
+      return;
+    }
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      setDocumentRequestErrors((current) => ({
+        ...current,
+        [applicationId]: "Please sign in again before sending the request.",
+      }));
+      return;
+    }
+
+    setSubmittingDocumentRequestFor(applicationId);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/applications/${applicationId}/request-documents`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ message: requestMessage }),
+        },
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        setDocumentRequestErrors((current) => ({
+          ...current,
+          [applicationId]: data.detail || "Could not send the document request.",
+        }));
+        return;
+      }
+
+      setReviewQueueMessage("Additional document request sent to the applicant.");
+      setDocumentRequestMessages((current) => ({
+        ...current,
+        [applicationId]: "",
+      }));
+      await loadReviewQueue();
+    } catch {
+      setDocumentRequestErrors((current) => ({
+        ...current,
+        [applicationId]: "Could not reach the backend.",
+      }));
+    } finally {
+      setSubmittingDocumentRequestFor(null);
     }
   }
 
@@ -279,6 +350,8 @@ function App() {
     setDocumentsErrors({});
     setDecisionReasons({});
     setDecisionError("");
+    setDocumentRequestMessages({});
+    setDocumentRequestErrors({});
     setMessage("You have signed out.");
   }
 
@@ -312,6 +385,8 @@ function App() {
         .approve-button:hover { background: #125b34; }
         .reject-button { background: #b42318; }
         .reject-button:hover { background: #8f1c13; }
+        .request-documents-button { background: #526579; }
+        .request-details { margin-top: 8px; padding: 12px; background: #f3f6fb; border-left: 4px solid #1769aa; border-radius: 7px; }
         .preview { margin-top: 24px; }
         .preview iframe { width: 100%; height: 600px; border: 1px solid #cbd5e1; border-radius: 8px; }
         @media (max-width: 600px) {
@@ -359,13 +434,40 @@ function App() {
                       {applications.map((application) => (
                         <li key={application.id}>
                           <strong>Status:</strong> {application.status}
+
+                          {application.document_request_message && (
+                            <div className="request-details">
+                              <strong>Reviewer requests:</strong>{" "}
+                              {application.document_request_message}
+
+                              {application.documents_requested_by && (
+                                <>
+                                  <br />
+                                  <strong>Requested by:</strong>{" "}
+                                  {application.documents_requested_by}
+                                </>
+                              )}
+
+                              {application.documents_requested_at && (
+                                <>
+                                  <br />
+                                  <strong>Requested at:</strong>{" "}
+                                  {new Date(
+                                    application.documents_requested_at,
+                                  ).toLocaleString()}
+                                </>
+                              )}
+                            </div>
+                          )}
+
                           {application.reason && (
                             <>
                               <br />
-                              <strong>Reviewer’s reason:</strong>{" "}
+                              <strong>Reviewer’s decision reason:</strong>{" "}
                               {application.reason}
                             </>
                           )}
+
                           <br />
                           <strong>Created:</strong>{" "}
                           {new Date(application.created_at).toLocaleString()}
@@ -414,6 +516,13 @@ function App() {
                       {new Date(application.created_at).toLocaleString()}
                     </p>
 
+                    {application.document_request_message && (
+                      <div className="request-details">
+                        <strong>Previous document request:</strong>{" "}
+                        {application.document_request_message}
+                      </div>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => loadApplicationDocuments(application.id)}
@@ -455,8 +564,45 @@ function App() {
                       </ul>
                     )}
 
+                    <label htmlFor={`request-${application.id}`}>
+                      Explain which additional documents are needed
+                    </label>
+                    <textarea
+                      id={`request-${application.id}`}
+                      value={documentRequestMessages[application.id] || ""}
+                      onChange={(event) =>
+                        setDocumentRequestMessages((current) => ({
+                          ...current,
+                          [application.id]: event.target.value,
+                        }))
+                      }
+                      maxLength={1000}
+                      placeholder="For example: Please upload your latest transcript."
+                    />
+
+                    {documentRequestErrors[application.id] && (
+                      <p className="error">
+                        {documentRequestErrors[application.id]}
+                      </p>
+                    )}
+
+                    <button
+                      className="request-documents-button"
+                      type="button"
+                      disabled={
+                        submittingDocumentRequestFor === application.id
+                      }
+                      onClick={() =>
+                        submitDocumentRequest(application.id)
+                      }
+                    >
+                      {submittingDocumentRequestFor === application.id
+                        ? "Sending request..."
+                        : "Request additional documents"}
+                    </button>
+
                     <label htmlFor={`reason-${application.id}`}>
-                      Reason for decision
+                      Reason for final decision
                     </label>
                     <textarea
                       id={`reason-${application.id}`}
