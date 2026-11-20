@@ -65,12 +65,15 @@ def change_user_role(
             detail="You cannot change your own role",
         )
 
-    if old_role == "admin" and update.role != "admin":
-        if users.count_documents({"role": "admin"}) <= 1:
-            raise HTTPException(
-                status_code=409,
-                detail="The last administrator cannot be demoted",
-            )
+    if (
+        old_role == "admin"
+        and update.role != "admin"
+        and users.count_documents({"role": "admin"}) <= 1
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="The last administrator cannot be demoted",
+        )
 
     changed_at = datetime.now(UTC)
     history_entry = {
