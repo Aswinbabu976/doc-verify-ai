@@ -3,13 +3,27 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import jwt
+from bson import ObjectId
 from fastapi.testclient import TestClient
 
+import auth as auth_module
 import documents as documents_module
 from auth import jwt_secret
 from main import app
 
 client = TestClient(app)
+
+
+class FakeUsers:
+    def __init__(self, role):
+        self.role = role
+
+    def find_one(self, query):
+        return {
+            "_id": ObjectId(),
+            "email": query["email"],
+            "role": self.role,
+        }
 
 
 class FakeDocumentsCollection:
@@ -20,11 +34,17 @@ class FakeDocumentsCollection:
 
 def make_token(role: str) -> str:
     expires = datetime.now(UTC) + timedelta(minutes=5)
-    payload = {"sub": "test@example.com", "role": role, "exp": expires}
+    payload = {
+        "sub": "test@example.com",
+        "role": role,
+        "exp": expires,
+    }
     return jwt.encode(payload, jwt_secret, algorithm="HS256")
 
 
 def test_applicant_can_upload_valid_pdf(monkeypatch, tmp_path):
+    monkeypatch.setattr(auth_module, "users", FakeUsers("applicant"))
+
     fake_documents = FakeDocumentsCollection()
     monkeypatch.setattr(documents_module, "documents", fake_documents)
     monkeypatch.setattr(documents_module, "upload_directory", tmp_path)
@@ -32,7 +52,13 @@ def test_applicant_can_upload_valid_pdf(monkeypatch, tmp_path):
     response = client.post(
         "/documents",
         headers={"Authorization": f"Bearer {make_token('applicant')}"},
-        files={"file": ("synthetic.pdf", b"%PDF-1.4\nsynthetic test file", "application/pdf")},
+        files={
+            "file": (
+                "synthetic.pdf",
+                b"%PDF-1.4\nsynthetic test file",
+                "application/pdf",
+            )
+        },
     )
 
     assert response.status_code == 201
@@ -42,7 +68,12 @@ def test_applicant_can_upload_valid_pdf(monkeypatch, tmp_path):
 
 
 def test_upload_rejects_non_pdf(monkeypatch, tmp_path):
-    monkeypatch.setattr(documents_module, "documents", FakeDocumentsCollection())
+    monkeypatch.setattr(auth_module, "users", FakeUsers("applicant"))
+    monkeypatch.setattr(
+        documents_module,
+        "documents",
+        FakeDocumentsCollection(),
+    )
     monkeypatch.setattr(documents_module, "upload_directory", tmp_path)
 
     response = client.post(
@@ -55,13 +86,24 @@ def test_upload_rejects_non_pdf(monkeypatch, tmp_path):
 
 
 def test_reviewer_cannot_upload_as_applicant(monkeypatch, tmp_path):
-    monkeypatch.setattr(documents_module, "documents", FakeDocumentsCollection())
+    monkeypatch.setattr(auth_module, "users", FakeUsers("reviewer"))
+    monkeypatch.setattr(
+        documents_module,
+        "documents",
+        FakeDocumentsCollection(),
+    )
     monkeypatch.setattr(documents_module, "upload_directory", tmp_path)
 
     response = client.post(
         "/documents",
         headers={"Authorization": f"Bearer {make_token('reviewer')}"},
-        files={"file": ("synthetic.pdf", b"%PDF-1.4\nsynthetic test file", "application/pdf")},
+        files={
+            "file": (
+                "synthetic.pdf",
+                b"%PDF-1.4\nsynthetic test file",
+                "application/pdf",
+            )
+        },
     )
 
     assert response.status_code == 403
