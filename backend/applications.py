@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from pymongo import ASCENDING, DESCENDING
 
+from audit import record_audit_event
 from auth import require_role, users
 from verification_rules import get_active_rule_snapshot
 
@@ -80,6 +81,14 @@ def create_application(
 
     result = applications.insert_one(application)
     application["_id"] = result.inserted_id
+
+    record_audit_event(
+        actor_email=user["email"],
+        event_type="application.created",
+        target_type="application",
+        target_id=str(result.inserted_id),
+        details={"rule_versions": rule_versions},
+    )
 
     return format_application(application)
 
@@ -179,6 +188,14 @@ def request_additional_documents(
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")
 
+    record_audit_event(
+        actor_email=user["email"],
+        event_type="application.documents_requested",
+        target_type="application",
+        target_id=str(object_id),
+        details={"message": message},
+    )
+
     application = applications.find_one({"_id": object_id})
     return format_application(application)
 
@@ -233,6 +250,15 @@ def update_application_status(
 
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")
+
+    if is_final_decision:
+        record_audit_event(
+            actor_email=user["email"],
+            event_type="application.final_decision",
+            target_type="application",
+            target_id=str(object_id),
+            details={"status": update.status, "reason": reason},
+        )
 
     application = applications.find_one({"_id": object_id})
     return format_application(application)

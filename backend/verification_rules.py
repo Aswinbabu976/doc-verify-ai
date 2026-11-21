@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from pymongo import ASCENDING, DESCENDING
 
+from audit import record_audit_event
 from auth import require_role, users
 
 router = APIRouter(prefix="/admin/rules", tags=["verification rules"])
@@ -115,6 +116,19 @@ def create_rule(
     }
     result = rules.insert_one(rule)
     rule["_id"] = result.inserted_id
+
+    record_audit_event(
+        actor_email=admin["email"],
+        event_type="verification_rule.created",
+        target_type="verification_rule",
+        target_id=f"{rule['rule_key']}:v{rule['version']}",
+        details={
+            "rule_key": rule["rule_key"],
+            "version": rule["version"],
+            "active": rule["active"],
+        },
+    )
+
     return format_rule(rule)
 
 
@@ -144,6 +158,19 @@ def create_rule_version(
     }
     result = rules.insert_one(rule)
     rule["_id"] = result.inserted_id
+
+    record_audit_event(
+        actor_email=admin["email"],
+        event_type="verification_rule.version_created",
+        target_type="verification_rule",
+        target_id=f"{rule['rule_key']}:v{rule['version']}",
+        details={
+            "rule_key": rule["rule_key"],
+            "version": rule["version"],
+            "active": rule["active"],
+        },
+    )
+
     return format_rule(rule)
 
 
@@ -174,4 +201,17 @@ def deactivate_rule(
     }
     result = rules.insert_one(rule)
     rule["_id"] = result.inserted_id
+
+    record_audit_event(
+        actor_email=admin["email"],
+        event_type="verification_rule.deactivated",
+        target_type="verification_rule",
+        target_id=f"{rule['rule_key']}:v{rule['version']}",
+        details={
+            "rule_key": rule["rule_key"],
+            "version": rule["version"],
+            "active": rule["active"],
+        },
+    )
+
     return format_rule(rule)
