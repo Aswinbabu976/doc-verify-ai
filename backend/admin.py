@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from pymongo import ASCENDING
 
+from audit import record_audit_event
 from auth import require_role, users
 
 router = APIRouter(prefix="/admin", tags=["administration"])
@@ -98,6 +99,18 @@ def change_user_role(
         )
 
     updated_user = users.find_one({"_id": object_id})
+
+    record_audit_event(
+        actor_email=admin["email"],
+        event_type="user.role_changed",
+        target_type="user",
+        target_id=str(object_id),
+        details={
+            "email": updated_user["email"],
+            "previous_role": old_role,
+            "new_role": update.role,
+        },
+    )
 
     return {
         **format_user(updated_user),

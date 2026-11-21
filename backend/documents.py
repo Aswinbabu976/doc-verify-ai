@@ -9,6 +9,7 @@ from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
+from audit import record_audit_event
 from auth import require_role, users
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -67,6 +68,17 @@ async def upload_document(
     except Exception:
         stored_path.unlink(missing_ok=True)
         raise
+
+    record_audit_event(
+        actor_email=user["email"],
+        event_type="document.uploaded",
+        target_type="document",
+        target_id=str(result.inserted_id),
+        details={
+            "filename": original_filename,
+            "size_bytes": len(content),
+        },
+    )
 
     return {
         "id": str(result.inserted_id),

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DocumentUpload from "./DocumentUpload";
+import AuditHistory from "./AuditHistory";
 
 const API_URL = "http://localhost:8000";
 
@@ -1367,6 +1368,8 @@ function App() {
                     );
                   })}
                 </section>
+
+                <AuditHistory />
               </>
             )}
 
