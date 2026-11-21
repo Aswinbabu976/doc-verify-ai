@@ -27,7 +27,7 @@ Use only synthetic or anonymized documents for development and testing. Do not u
 ## Project status
 
 - **Phase 1 - Product definition:** drafted.
-- **Phase 2 - Core platform:** planned.
+- **Phase 2 - Core platform and development workflow:** implemented; sprint documentation submitted for review.
 - **Phase 3 - AI and RAG integration:** planned.
 - **Phase 4 - Testing and evaluation:** planned.
 - **Phase 5 - Final documentation and video:** planned.
