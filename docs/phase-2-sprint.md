@@ -28,29 +28,29 @@ Build the core DocVerify AI application without AI features, and establish a dev
 
 
 
-\## Completed work
+## Completed work
 
 
 
-\- Implemented authentication and role-based access for applicants, reviewers, and administrators.
+- Implemented authentication and role-based access for applicants, reviewers, and administrators.
 
-\- Added PDF uploads with file validation and storage.
+- Added PDF uploads with file validation and storage.
 
-\- Added application tracking, reviewer queue, document review, final decisions, and requests for additional documents.
+- Added application tracking, reviewer queue, document review, final decisions, and requests for additional documents.
 
-\- Added administrator user-role management and versioned verification rules.
+- Added administrator user-role management and versioned verification rules.
 
-\- Added audit events for key actions and an administrator audit-history view.
+- Added audit events for key actions and an administrator audit-history view.
 
-\- Added Docker Compose services for the frontend, backend, MongoDB, and Qdrant.
+- Added Docker Compose services for the frontend, backend, MongoDB, and Qdrant.
 
-\- Added a GitHub Actions workflow for backend linting and tests and frontend build checks.
+- Added a GitHub Actions workflow for backend linting and tests and frontend build checks.
 
-\- Tracked work on the GitHub Project board, with issues and pull requests.
+- Tracked work on the GitHub Project board, with issues and pull requests.
 
 
 
-\## Verification
+## Verification
 
 
 
@@ -58,13 +58,13 @@ The local Docker Compose status showed all four services running:
 
 
 
-\- Frontend — running
+- Frontend — running
 
-\- Backend — healthy
+- Backend — healthy
 
-\- MongoDB — healthy
+- MongoDB — healthy
 
-\- Qdrant — running
+- Qdrant — running
 
 
 
@@ -72,21 +72,21 @@ The GitHub Actions run shown after the latest import-order fix passed. Confirm t
 
 
 
-\## Pull requests
+## Pull requests
 
 
 
-\- Docker/application setup: PR #15
+- Docker/application setup: PR #15
 
-\- Document upload: PR #19
+- Document upload: PR #19
 
-\- User-role administration: PR #25
+- User-role administration: PR #25
 
-\- Other Phase 2 feature pull requests: add links here
+- Other Phase 2 feature pull requests: add links here
 
 
 
-\## Not included in Phase 2
+## Not included in Phase 2
 
 
 
