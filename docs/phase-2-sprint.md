@@ -1,8 +1,8 @@
-\# Phase 2 Sprint: Implementation and Development Workflow
+# Phase 2 Sprint: Implementation and Development Workflow
 
 
 
-\## Goal
+## Goal
 
 
 
@@ -10,23 +10,21 @@ Build the core DocVerify AI application without AI features, and establish a dev
 
 
 
-\## Scope
+## Scope
 
+- User registration and login with Applicant, Reviewer, and Admin roles
 
+- PDF document upload and storage
 
-\- User registration and login with Applicant, Reviewer, and Admin roles
+- Application tracking and reviewer workflow
 
-\- PDF document upload and storage
+- Basic administration and versioned verification rules
 
-\- Application tracking and reviewer workflow
+- Audit history
 
-\- Basic administration and versioned verification rules
+- Docker Compose setup for the application services
 
-\- Audit history
-
-\- Docker Compose setup for the application services
-
-\- GitHub Actions CI for linting, tests, and build checks
+- GitHub Actions CI for linting, tests, and build checks
 
 
 
@@ -96,37 +94,35 @@ AI-based verification findings and application-question answering are planned fo
 
 
 
-\## Retrospective
+## Retrospective
 
 
 
-\### What went well
+### What went well
 
 
 
-\- Feature branches and pull requests kept changes organized.
+- Feature branches and pull requests kept changes organized.
 
-\- Docker Compose made the services available together.
+- Docker Compose made the services available together.
 
-\- CI caught lint and frontend build issues before merging.
-
-
-
-\### Challenges
+- CI caught lint and frontend build issues before merging.
 
 
 
-\- Import ordering and missing frontend component files caused CI build failures during development.
-
-\- These issues were fixed before the successful CI run shown.
+### Challenges
 
 
+- Import ordering and missing frontend component files caused CI build failures during development.
 
-\### Follow-up
+- These issues were fixed before the successful CI run shown.
 
 
 
-\- Confirm branch protection and required checks on `main`.
+### Follow-up
 
-\- Keep the README setup instructions and this sprint document aligned with the current Compose configuration.
+
+- Confirm branch protection and required checks on `main`.
+
+- Keep the README setup instructions and this sprint document aligned with the current Compose configuration.
 
