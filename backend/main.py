@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from verification_rules import router as verification_rules_router
 
 from admin import router as admin_router
 from applications import router as applications_router
@@ -20,6 +21,7 @@ app.include_router(applications_router)
 app.include_router(auth_router)
 app.include_router(documents_router)
 app.include_router(admin_router)
+app.include_router(verification_rules_router)
 
 
 @app.get("/health")
