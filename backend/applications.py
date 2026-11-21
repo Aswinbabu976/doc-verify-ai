@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from pymongo import ASCENDING, DESCENDING
 
 from auth import require_role, users
+from verification_rules import get_active_rule_snapshot
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 applications = users.database["applications"]
@@ -48,6 +49,9 @@ def format_application(application):
             if documents_requested_at
             else None
         ),
+        "verification_rule_versions": application.get(
+            "verification_rule_versions", []
+        ),
         "created_at": application["created_at"].isoformat(),
         "updated_at": application["updated_at"].isoformat(),
     }
@@ -58,34 +62,26 @@ def create_application(
     user: Annotated[dict, Depends(require_role("applicant"))],
 ):
     now = datetime.now(UTC)
-    result = applications.insert_one(
-        {
-            "applicant_email": user["email"],
-            "status": "submitted",
-            "decision_reason": None,
-            "decided_by": None,
-            "decided_at": None,
-            "document_request_message": None,
-            "documents_requested_by": None,
-            "documents_requested_at": None,
-            "created_at": now,
-            "updated_at": now,
-        }
-    )
+    rule_versions = get_active_rule_snapshot()
 
-    return {
-        "id": str(result.inserted_id),
+    application = {
         "applicant_email": user["email"],
         "status": "submitted",
-        "reason": None,
+        "decision_reason": None,
         "decided_by": None,
         "decided_at": None,
         "document_request_message": None,
         "documents_requested_by": None,
         "documents_requested_at": None,
-        "created_at": now.isoformat(),
-        "updated_at": now.isoformat(),
+        "verification_rule_versions": rule_versions,
+        "created_at": now,
+        "updated_at": now,
     }
+
+    result = applications.insert_one(application)
+    application["_id"] = result.inserted_id
+
+    return format_application(application)
 
 
 @router.get("/mine")
