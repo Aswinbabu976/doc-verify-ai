@@ -1,4 +1,4 @@
-# Phase 1 User Stories and Acceptance Criteria
+#  User Stories and Acceptance Criteria
 
 ## US-01: Sign in securely - Must
 As an applicant, I want to create an account and sign in securely, so that I can submit and track my applications.
@@ -97,6 +97,36 @@ Acceptance criteria:
 
 ## US-12: Ask questions about an application - Could
 As a reviewer, I want to ask questions about an application and receive answers with sources, so that I can investigate findings more quickly.
+
+## Implementation status
+
+Status reflects the current implementation, not whether the original acceptance criteria have been changed.
+
+| Story | Status | Notes |
+|---|---|---|
+| US-01: Sign in securely | Done | Registration, login, and role-based access are implemented. |
+
+| US-02: Upload application documents | Partial | PDF upload is implemented. JPG and PNG support is not confirmed. |
+
+| US-03: Track application status | Done | Applicants can view their applications and statuses. |
+
+| US-04: View review queue | Done | Reviewer queue is implemented. |
+
+| US-05: Review documents and extracted fields | Partial | Document review is implemented; extracted-field correction and its audit trail are not confirmed. |
+
+| US-06: Understand verification findings | Planned | AI findings and source citations are planned for Phase 3. |
+
+| US-07: Record the final decision | Done | Reviewers can record a final decision with a reason. |
+
+| US-08: Request more documents | Done | Reviewers can request additional documents. |
+
+| US-09: Manage user roles | Done | Administrators can manage roles; changes are recorded. |
+
+| US-10: Manage verification rules | Done | Versioned rules can be created and deactivated. |
+
+| US-11: View audit history | Done | Administrators can view audit events. |
+
+| US-12: Ask questions about an application | Planned | Application questions and cited answers are planned for Phase 3. |
 
 Acceptance criteria:
 - Answers use application data and approved reference sources.
